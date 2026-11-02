@@ -1,0 +1,46 @@
+# Reference manifest for running rec-serve as its own service (the fallback to
+# in-process serving). Resource values are starting points, not measurements.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: rec-serve, namespace: rec }
+spec:
+  replicas: 4
+  strategy: { rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
+  selector: { matchLabels: { app: rec-serve } }
+  template:
+    metadata: { labels: { app: rec-serve } }
+    spec:
+      containers:
+        - name: serve
+          image: your-registry/rec-serve@sha256:DIGEST   # always by digest, never a tag
+          # One worker per pod: /metrics is per process, so scale with pods, not --workers.
+          args: ["--app", "demo", "--workers", "1"]
+          env:
+            - { name: REC_MAX_INFLIGHT, value: "2" }   # >2 lowers throughput (GIL)
+            - { name: RECSYS_ARTIFACT_DIR, value: /var/lib/rec/artifacts }
+          ports: [{ containerPort: 8080, name: http }]
+          readinessProbe: { httpGet: { path: /readyz, port: http }, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /healthz, port: http }, periodSeconds: 10 }
+          resources:
+            requests: { cpu: "1", memory: 1Gi }
+            limits: { memory: 2Gi }
+          volumeMounts: [{ name: artifacts, mountPath: /var/lib/rec/artifacts, readOnly: true }]
+      volumes:
+        - name: artifacts   # synced from the artifact bucket (gcsfuse, CSI, or a sync sidecar)
+          emptyDir: { sizeLimit: 1Gi }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: rec-serve, namespace: rec }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: rec-serve }
+  minReplicas: 4
+  maxReplicas: 16
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 60 } }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: rec-serve, namespace: rec }
+spec: { minAvailable: 1, selector: { matchLabels: { app: rec-serve } } }

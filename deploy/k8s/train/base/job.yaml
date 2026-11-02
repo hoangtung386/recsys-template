@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rec-train
+  namespace: rec
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: train
+          image: rec-train              # replaced by the overlay (digest)
+          args: ["--app", "demo"]       # the scheduler overrides --app and --revision
+          env:
+            - { name: RECSYS_ARTIFACT_DIR, value: /var/lib/rec/artifacts }
+            - { name: RECSYS_REGISTRY_DB, value: /var/lib/rec/registry/registry.sqlite3 }
+            - { name: RECSYS_LOG_JSON, value: "true" }
+            - name: RECSYS_REGISTRY_DSN
+              valueFrom: { secretKeyRef: { name: rec-secrets, key: registry_dsn, optional: true } }
+          resources:
+            requests: { cpu: "2", memory: 2Gi }   # starting points, measure and adjust
+            limits: { memory: 4Gi }
+          volumeMounts:
+            - { name: artifacts, mountPath: /var/lib/rec/artifacts }
+            - { name: registry, mountPath: /var/lib/rec/registry }
+      volumes:
+        - name: artifacts
+          persistentVolumeClaim: { claimName: rec-artifacts }
+        - name: registry
+          persistentVolumeClaim: { claimName: rec-registry }

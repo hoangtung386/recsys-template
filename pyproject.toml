@@ -1,0 +1,143 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rec-sys"
+dynamic = ["version"]
+description = "Closed-loop recommender: numpy-only serving engine, training, registry, drift and rollout policies."
+readme = "README.md"
+requires-python = ">=3.11"
+# The serving engine depends on numpy only. Everything else is an extra.
+dependencies = ["numpy>=1.26"]
+
+[project.optional-dependencies]
+# Role -> what it needs. `uv sync --extra <role>`.
+train = [
+    "scipy>=1.11",
+    "prometheus-client>=0.20",
+    "pydantic-settings>=2.7",
+    "structlog>=24.1",
+]
+serve = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "prometheus-client>=0.20",
+    "pydantic-settings>=2.7",
+    "structlog>=24.1",
+]
+tracking = ["mlflow-skinny>=2.14"]
+
+[project.scripts]
+rec-train = "recsys.cli.train:main"
+rec-admin = "recsys.cli.admin:main"
+rec-serve = "recsys.cli.serve:main"
+rec-loop = "recsys.cli.loop:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "httpx>=0.27",
+    "ruff>=0.6",
+    "mypy>=1.10",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.hatch.version]
+path = "src/recsys/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/recsys"]
+
+# --------------------------------------------------------------------------- #
+# Ruff: PEP 8 (E/W), imports (I), naming (N), PEP 257 docstrings (D), bugbear,
+# pyupgrade, simplify, security (S), pylint subset (PL) and friends.
+# --------------------------------------------------------------------------- #
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["src", "tests", "benchmarks"]
+# Docs are prose; never let the formatter rewrite their code blocks.
+extend-exclude = ["docs"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle (PEP 8)
+    "F",        # pyflakes
+    "I",        # isort
+    "N",        # pep8-naming
+    "D",        # pydocstyle (PEP 257)
+    "UP",       # pyupgrade
+    "B",        # flake8-bugbear
+    "C4",       # comprehensions
+    "SIM",      # simplify
+    "S",        # bandit
+    "PL",       # pylint
+    "PT",       # pytest style
+    "PERF",     # perflint
+    "RUF",      # ruff-specific
+    "T20",      # no stray print()
+    "TID",      # tidy imports
+    "ARG",      # unused arguments
+]
+ignore = [
+    "D105", "D107",   # magic methods / __init__ docstrings
+    "D203", "D213",   # conflict with D211 / D212
+    "PLR0913",        # many arguments are normal for dataclass-like APIs
+    "PLR0917",        # same, for positional arguments
+    "PLR2004",        # magic values
+    "S101",           # asserts are allowed (tests, invariants)
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["recsys"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D", "ARG", "S", "PLR", "PT018", "PT011"]
+"benchmarks/**" = ["D", "T20"]
+"src/recsys/cli/**" = ["T20"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# --------------------------------------------------------------------------- #
+# Mypy
+# --------------------------------------------------------------------------- #
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src", "tests", "benchmarks"]
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["mlflow.*", "scipy.*"]
+ignore_missing_imports = true
+
+# --------------------------------------------------------------------------- #
+# Pytest and coverage
+# --------------------------------------------------------------------------- #
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"
+markers = ["slow: end-to-end tests that train a model"]
+filterwarnings = [
+    "error",
+    # Starlette's TestClient warns that it prefers a newer HTTP client package.
+    "ignore:Using `httpx` with `starlette.testclient`:starlette.exceptions.StarletteDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src/recsys"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]

@@ -1,0 +1,5 @@
+# Codeowners: Configure your team for code review
+# Example format for GitHub/GitLab:
+# *                       @your-org/maintainers
+# /src/recsys/engine/     @your-org/engine-team
+# /deploy/                @your-org/devops-team

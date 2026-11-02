@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cold": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "group": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "trend": {
+          "minimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "group",
+        "content",
+        "trend"
+      ],
+      "type": "object"
+    },
+    "eps": {
+      "maximum": 1,
+      "minimum": 0,
+      "type": "number"
+    },
+    "group_mix": {
+      "maximum": 1,
+      "minimum": 0,
+      "type": "number"
+    },
+    "lang_bonus": {
+      "type": "number"
+    },
+    "lukewarm": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "group": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "trend": {
+          "minimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "group",
+        "content",
+        "trend"
+      ],
+      "type": "object"
+    },
+    "lukewarm_min_recent": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "mmr_lambda": {
+      "maximum": 1,
+      "minimum": 0,
+      "type": "number"
+    },
+    "pool_size": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "recent_decay": {
+      "exclusiveMinimum": 0,
+      "maximum": 1,
+      "type": "number"
+    },
+    "warm": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "group": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "trend": {
+          "minimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "group",
+        "content",
+        "trend"
+      ],
+      "type": "object"
+    },
+    "warm_min_recent": {
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "title": "EngineConfig",
+  "type": "object"
+}

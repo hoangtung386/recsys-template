@@ -1,0 +1,79 @@
+# Alert rules for the metrics exported by rec-serve. Thresholds marked
+# "provisional" are tuned after two weeks of real traffic.
+groups:
+  - name: rec-serving
+    rules:
+      - alert: RecLatencyP95High
+        expr: histogram_quantile(0.95, sum by (le) (rate(rec_latency_seconds_bucket[5m]))) > 0.050
+        for: 10m
+        labels: { severity: page }
+        annotations: { summary: "p95 of /v1/rec above 50 ms for 10 minutes" }
+
+      - alert: RecEmptyRateHigh
+        expr: |
+          sum(rate(rec_empty_total{reason!~"control|holdout|shadow"}[10m]))
+          / sum(rate(rec_requests_total[10m])) > 0.20
+        for: 10m
+        labels: { severity: page }
+        annotations: { summary: "More than 20% of responses are empty" }
+
+      # Silent degradation: still answering, but worse. Provisional: 5%.
+      - alert: RecDegradedRateHigh
+        expr: sum(rate(rec_degraded_total[10m])) / sum(rate(rec_requests_total[10m])) > 0.05
+        for: 15m
+        labels: { severity: ticket }
+        annotations: { summary: "Engine deadline or empty pool hit on >5% of requests" }
+
+      - alert: RecOverloadHigh
+        expr: sum(rate(rec_requests_total{reason=~"overload|timeout"}[10m])) / sum(rate(rec_requests_total[10m])) > 0.01
+        for: 10m
+        labels: { severity: page }
+        annotations: { summary: "Overload or timeout above 1%: add pods (not threads)" }
+
+      - alert: RecRegistryLoadFailing
+        expr: increase(rec_registry_load_failures_total[15m]) > 3
+        labels: { severity: page }
+        annotations: { summary: "Artifact refresh keeps failing; serving a stale model" }
+
+      - alert: RecRegistryStale   # provisional: training runs daily
+        expr: rec_registry_age_seconds > 3600
+        for: 10m
+        labels: { severity: ticket }
+        annotations: { summary: "No successful artifact refresh for an hour" }
+
+      - alert: RecServedDropped
+        expr: increase(rec_served_dropped_total[10m]) > 0
+        labels: { severity: ticket }
+        annotations: { summary: "rec.served records are being dropped; A/B analysis is losing data" }
+
+  - name: rec-loop
+    rules:
+      - alert: RecModelStale   # provisional: training runs daily
+        expr: time() - max by (app) (rec_train_last_success_timestamp) > 36 * 3600
+        labels: { severity: ticket }
+        annotations: { summary: "No successful training run for 36 hours" }
+
+      - alert: RecMirrorDrift
+        expr: max by (app) (rec_mlflow_mirror_drift) > 0
+        for: 30m
+        labels: { severity: ticket }
+        annotations: { summary: "MLflow aliases disagree with the registry; run rec-admin reconcile-mlflow" }
+
+      - alert: RecLoopFrozen
+        expr: max by (app) (rec_loop_frozen) > 0
+        for: 24h
+        labels: { severity: ticket }
+        annotations: { summary: "App frozen for over 24h after a failed release; investigate and unfreeze" }
+
+      - alert: RecExposureConcentrating   # provisional threshold
+        expr: rec_served_item_gini > 0.85
+        for: 1h
+        labels: { severity: ticket }
+        annotations: { summary: "Exposure is concentrating on few items (possible silent degradation)" }
+
+  - name: rec-watchdog
+    rules:
+      # Always firing. If the receiving channel goes quiet, the alerting stack is dead.
+      - alert: DeadMansSwitch
+        expr: vector(1)
+        labels: { severity: heartbeat }

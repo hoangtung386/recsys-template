@@ -1,0 +1,16 @@
+resources:
+  - ../../base
+namePrefix: stg-
+images:
+  - name: rec-train
+    newName: REGISTRY/rec-train
+    digest: sha256:REPLACED_BY_CI          # always by digest, never a tag
+patches:
+  - target: { kind: Job, name: rec-train }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/volumes/0/persistentVolumeClaim/claimName
+        value: rec-artifacts-stg
+      - op: replace
+        path: /spec/template/spec/volumes/1/persistentVolumeClaim/claimName
+        value: rec-registry-stg
