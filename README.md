@@ -1,4 +1,4 @@
-# Pictrace Recommendation System 
+# Recommendation System template
 
 Hệ gợi ý khép kín: **huấn luyện → cổng đánh giá → đăng ký → phát hành (shadow/canary) → phục vụ → giám sát drift → quyết định retrain**.
 
