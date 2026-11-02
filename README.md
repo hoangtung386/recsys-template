@@ -1,6 +1,6 @@
 # Recommendation System template
 
-Hệ gợi ý khép kín: **huấn luyện → cổng đánh giá → đăng ký → phát hành (shadow/canary) → phục vụ → giám sát drift → quyết định retrain**.
+Hệ gợi ý khép kín: **huấn luyện -> cổng đánh giá -> đăng ký -> phát hành (shadow/canary) -> phục vụ -> giám sát drift -> quyết định retrain**.
 
 Dự án này được dựng lại từ đầu theo [docs/THIET-KE-HE-THONG.md](docs/THIET-KE-HE-THONG.md); không kế thừa mã cũ. **Đọc [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) trước**: tài liệu thiết kế là lộ trình, nhiều mục trong đó mô tả cấu trúc cũ. Đóng góp: [CONTRIBUTING.md](CONTRIBUTING.md).
 
